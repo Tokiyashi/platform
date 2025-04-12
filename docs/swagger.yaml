@@ -1,0 +1,437 @@
+basePath: /
+definitions:
+  handlers.AuthBody:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  handlers.CourseBody:
+    properties:
+      creatorId:
+        type: string
+      description:
+        type: string
+      title:
+        type: string
+    type: object
+  handlers.RegisterBody:
+    properties:
+      email:
+        type: string
+      firstName:
+        type: string
+      lastName:
+        type: string
+      password:
+        type: string
+    type: object
+  handlers.SectionBody:
+    properties:
+      course_id:
+        type: integer
+      description:
+        type: string
+      title:
+        type: string
+    type: object
+  models.Course:
+    properties:
+      created_at:
+        type: string
+      creator_id:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      title:
+        type: string
+    type: object
+  models.Section:
+    properties:
+      course_id:
+        type: integer
+      description:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+    type: object
+  models.User:
+    properties:
+      email:
+        type: string
+      firstName:
+        type: string
+      id:
+        type: string
+      lastName:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Лучший в мире бэкендер, стример, блогер, фронтендер, тиктокер, лайкер
+    и будущий актёр (Никита Стасыч Р.) забабахал бэкенд и документацию для тг-блогера,
+    живой легенды известной в кругах фронтов по имени jormZ
+  title: Swagger ДЛЯ ОБРАЗОВАТЕЛЬНОЙ ПЛАТФОРМЫ (УМНИ)
+  version: "1.0"
+paths:
+  /auth:
+    post:
+      consumes:
+      - application/json
+      description: Логин с емаилом и паролем
+      parameters:
+      - description: Креды пользователя
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.AuthBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT Token
+          schema:
+            type: string
+        "404":
+          description: Пользователь не найден
+          schema:
+            type: string
+        "500":
+          description: Ошибка генерации токена
+          schema:
+            type: string
+      summary: Авторизовать пользователя
+      tags:
+      - Авторизация
+  /courses:
+    get:
+      consumes:
+      - application/json
+      description: Получить список курсов
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Course'
+            type: array
+        "400":
+          description: Ошибка при получении курсов
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить курсы
+      tags:
+      - Курсы
+    post:
+      consumes:
+      - application/json
+      description: Создать новый курс
+      parameters:
+      - description: Данные курса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CourseBody'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Курс создан
+          schema:
+            type: string
+        "400":
+          description: Ошибка при создании курса
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Добавить новый курс
+      tags:
+      - Курсы
+  /courses/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удалить курс по ID
+      parameters:
+      - description: ID курса
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Курс удален
+          schema:
+            type: string
+        "400":
+          description: Ошибка при удалении курса
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Удалить курс
+      tags:
+      - Курсы
+    put:
+      consumes:
+      - application/json
+      description: Обновить данные курса
+      parameters:
+      - description: ID курса
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Новые данные курса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CourseBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Курс обновлен
+          schema:
+            type: string
+        "400":
+          description: Ошибка при обновлении курса
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Обновить курс
+      tags:
+      - Курсы
+  /sections:
+    get:
+      consumes:
+      - application/json
+      description: Получить все секции определенного курса
+      parameters:
+      - description: ID курса
+        in: query
+        name: course_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Section'
+            type: array
+        "400":
+          description: Ошибка при получении секций
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить секции курса
+      tags:
+      - Секции
+    post:
+      consumes:
+      - application/json
+      description: Создать новую секцию в курсе
+      parameters:
+      - description: Данные секции
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SectionBody'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Секция создана
+          schema:
+            type: string
+        "400":
+          description: Ошибка при создании секции
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Добавить секцию
+      tags:
+      - Секции
+  /sections/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удалить секцию по ID
+      parameters:
+      - description: ID секции
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Секция удалена
+          schema:
+            type: string
+        "400":
+          description: Ошибка при удалении секции
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Удалить секцию
+      tags:
+      - Секции
+    put:
+      consumes:
+      - application/json
+      description: Обновить данные секции
+      parameters:
+      - description: ID секции
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Новые данные секции
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SectionBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Секция обновлена
+          schema:
+            type: string
+        "400":
+          description: Ошибка при обновлении секции
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Обновить секцию
+      tags:
+      - Секции
+  /users:
+    post:
+      consumes:
+      - application/json
+      description: Создать нового пользователя
+      parameters:
+      - description: User registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RegisterBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: string
+        "400":
+          description: Неправильно составлено тело запроса
+          schema:
+            type: string
+        "500":
+          description: Не удалось создать пользователя
+          schema:
+            type: string
+      summary: Зарегать нового пользователя
+      tags:
+      - Пользователи
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Получить данные пользователя по ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить данные пользователя
+      tags:
+      - Пользователи
+  /users/{id}/courses:
+    get:
+      consumes:
+      - application/json
+      description: Получить список курсов, в которых состоит пользователь
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Course'
+            type: array
+        "400":
+          description: Ошибка получения курсов
+          schema:
+            type: string
+        "404":
+          description: Пользователь не найден
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить курсы пользователя
+      tags:
+      - Пользователи
+securityDefinitions:
+  BearerAuth:
+    description: 'Enter your Bearer token in the format: Bearer <token>'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
