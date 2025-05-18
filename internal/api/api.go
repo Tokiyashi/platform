@@ -17,7 +17,23 @@ type API struct {
 	router *mux.Router
 }
 
-func middleware(next http.Handler) http.Handler {
+// CORS middleware — разрешает все источники
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		log.Printf("Raw Authorization header: '%s'", authHeader)
@@ -52,6 +68,9 @@ func (api *API) endpoints() {
 	uh := handlers.NewUserHandler(api.db)
 	ch := handlers.NewCourseHandler(api.db)
 
+	// Apply CORS to all routes
+	api.router.Use(corsMiddleware)
+
 	// Public routes (no auth required)
 	api.router.HandleFunc("/auth", uh.Auth).Methods("POST")
 	api.router.HandleFunc("/users", uh.AddOne).Methods("POST") // registration
@@ -61,28 +80,8 @@ func (api *API) endpoints() {
 
 	// Protected routes (auth required)
 	protected := api.router.PathPrefix("").Subrouter()
-	protected.Use(middleware)
+	protected.Use(authMiddleware)
 
 	// Course routes
 	protected.HandleFunc("/courses", ch.GetCurrentCourses).Methods("GET")
-	protected.HandleFunc("/courses", ch.AddOneCourse).Methods("POST")
-	protected.HandleFunc("/courses/{id}", ch.UpdateCourse).Methods("PUT")
-	protected.HandleFunc("/courses/{id}", ch.DeleteOneCourse).Methods("DELETE")
-
-	// User routes
-	protected.HandleFunc("/users/{id}", uh.GetUser).Methods("GET")
-	protected.HandleFunc("/users/{id}/courses", uh.GetUserCourses).Methods("GET")
-}
-
-func (api *API) Start() error {
-	return http.ListenAndServe(":8080", api.router)
-}
-
-func New(db *db.DB) *API {
-	api := &API{
-		db:     db,
-		router: mux.NewRouter(),
-	}
-	api.endpoints()
-	return api
-}
+	protected.HandleFunc("/courses", ch.AddOneCourse).
