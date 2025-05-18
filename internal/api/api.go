@@ -84,4 +84,24 @@ func (api *API) endpoints() {
 
 	// Course routes
 	protected.HandleFunc("/courses", ch.GetCurrentCourses).Methods("GET")
-	protected.HandleFunc("/courses", ch.AddOneCourse).
+	protected.HandleFunc("/courses", ch.AddOneCourse).Methods("POST")
+	protected.HandleFunc("/courses/{id}", ch.UpdateCourse).Methods("PUT")
+	protected.HandleFunc("/courses/{id}", ch.DeleteOneCourse).Methods("DELETE")
+
+	// User routes
+	protected.HandleFunc("/users/{id}", uh.GetUser).Methods("GET")
+	protected.HandleFunc("/users/{id}/courses", uh.GetUserCourses).Methods("GET")
+}
+
+func (api *API) Start() error {
+	return http.ListenAndServe(":8080", api.router)
+}
+
+func New(db *db.DB) *API {
+	api := &API{
+		db:     db,
+		router: mux.NewRouter(),
+	}
+	api.endpoints()
+	return api
+}
