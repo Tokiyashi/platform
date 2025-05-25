@@ -38,7 +38,7 @@ func (db *UserRepo) GetUser(id string) (*models.User, error) {
 }
 
 func (db *UserRepo) Auth(email, pass string) (*models.User, error) {
-	rows, err := db.pool.Query(context.Background(), "SELECT id, first_name, last_name, email FROM users WHERE email = $1 AND password = $2", email, pass)
+	rows, err := db.pool.Query(context.Background(), "SELECT id, first_name, last_name, email, role FROM users WHERE email = $1 AND password = $2", email, pass)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (db *UserRepo) Auth(email, pass string) (*models.User, error) {
 		return nil, fmt.Errorf("not found")
 	}
 
-	err = rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email)
+	err = rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.Role)
 	if err != nil {
 		return nil, err
 	}
