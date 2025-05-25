@@ -16,6 +16,13 @@ definitions:
       title:
         type: string
     type: object
+  handlers.JoinCourseBody:
+    properties:
+      courseId:
+        type: integer
+      userId:
+        type: integer
+    type: object
   handlers.RegisterBody:
     properties:
       email:
@@ -221,6 +228,34 @@ paths:
       security:
       - BearerAuth: []
       summary: Обновить курс
+      tags:
+      - Курсы
+  /courses/join:
+    post:
+      consumes:
+      - application/json
+      description: Присоединиться к курсу
+      parameters:
+      - description: ID пользователя и ID курса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.JoinCourseBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователь успешно добавлен в курс
+          schema:
+            type: string
+        "400":
+          description: Ошибка при добавлении пользователя в курс
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Присоединиться к курсу
       tags:
       - Курсы
   /sections:

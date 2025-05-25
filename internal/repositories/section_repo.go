@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"log"
 	"platform/internal/models"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -10,6 +11,7 @@ import (
 
 type Section_repo_interface interface {
 	GetSections() ([]models.Section, error)
+	GetSection(id int) (models.Section,error)
 	AddSection(section *models.Section) error
 	DeleteOneSection(id int) error
 	UpdateSection(section *models.Section) error
@@ -68,4 +70,23 @@ func (r *Section_repo) UpdateSection(section *models.Section) error {
 		return fmt.Errorf("error updating section: %w", err)
 	}
 	return nil
+}
+
+func (db *UserRepo) GetSection(id string) (*models.Section, error) {
+	rows, err := db.pool.Query(context.Background(), "SELECT id, title, description FROM sections WHERE id = $1", id)
+	if err != nil {
+		log.Println("user not found")
+		return nil, err
+	}
+	defer rows.Close()
+
+	section := &models.Section{}
+	if rows.Next() {
+		err = rows.Scan(&section.Id, &section.Title, &section.Description)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return section, nil
 }

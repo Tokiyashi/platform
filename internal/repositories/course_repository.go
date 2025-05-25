@@ -15,6 +15,7 @@ type CourseRepository interface {
 	AddCourse(ctx context.Context, course models.Course) (int, error)
 	UpdateCourse(ctx context.Context, course models.Course) error
 	DeleteCourse(ctx context.Context, id int) error
+	JoinCourse(ctx context.Context, userID string, courseID int) error
 }
 
 type CourseRepo struct {
@@ -56,13 +57,18 @@ func (r *CourseRepo) GetCourseByID(ctx context.Context, id int) (models.Course, 
 func (r *CourseRepo) AddCourse(ctx context.Context, course models.Course) (int, error) {
 	var id int
 	err := r.pool.QueryRow(ctx,
-		"INSERT INTO courses (title, description, creatorId) VALUES ($1, $2) RETURNING id",
+		"INSERT INTO courses (title, description, creator_id) VALUES ($1, $2, $3) RETURNING id",
 		course.Title, course.Description, course.Creator_id).Scan(&id)
 	if err != nil {
 		fmt.Print(err)
 		return 0, err
 	}
 	return id, nil
+}
+
+func (r *CourseRepo) JoinCourse(ctx context.Context, userID int, courseID int) error {
+	_, err := r.pool.Exec(ctx, "INSERT INTO users_courses (user_id, course_id) VALUES ($1, $2)", userID, courseID)
+	return err
 }
 
 func (r *CourseRepo) UpdateCourse(ctx context.Context, course models.Course) error {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"platform/internal/db"
 	"platform/internal/models"
@@ -17,6 +18,7 @@ type Course_handler_interface interface {
 	AddOneCourse(w http.ResponseWriter, r *http.Request)
 	DeleteOneCourse(w http.ResponseWriter, r *http.Request)
 	UpdateCourse(w http.ResponseWriter, r *http.Request)
+	JoinCourse(w http.ResponseWriter, r *http.Request)
 }
 
 type Course_handler struct {
@@ -79,6 +81,7 @@ func (h *Course_handler) AddOneCourse(w http.ResponseWriter, r *http.Request) {
 	course := models.Course{
 		Title:       cb.Title,
 		Description: cb.Description,
+		Creator_id: cb.CreatorId,
 	}
 
 	_, err := h.db.Courses.AddCourse(r.Context(), course)
@@ -120,6 +123,39 @@ func (h *Course_handler) DeleteOneCourse(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Write([]byte("Курс успешно удален"))
+}
+
+type JoinCourseBody struct {
+	UserId int `json:"userId"`
+	CourseId int `json:"courseId"`
+}
+// JoinCourse godoc
+// @Summary Присоединиться к курсу
+// @Description Присоединиться к курсу
+// @Tags Курсы
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body JoinCourseBody true "ID пользователя и ID курса"
+// @Success 200 {string} string "Пользователь успешно добавлен в курс"
+// @Failure 400 {string} string "Ошибка при добавлении пользователя в курс"
+// @Router /courses/join [post]
+func (c *Course_handler) JoinCourse(w http.ResponseWriter, r *http.Request) {
+	var cb JoinCourseBody
+	if err := json.NewDecoder(r.Body).Decode(&cb); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Неверный формат данных"))
+		return
+	}
+
+	log.Println(cb.UserId, cb.CourseId)
+	err := c.db.Courses.JoinCourse(r.Context(), cb.UserId, cb.CourseId)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Ошибка при добавлении пользователя в курс"))
+		return
+	}
+
 }
 
 // UpdateCourse godoc

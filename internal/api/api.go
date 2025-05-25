@@ -70,6 +70,7 @@ func (api *API) endpoints() {
   protected.HandleFunc("/courses", ch.AddOneCourse).Methods("POST")
   protected.HandleFunc("/courses/{id}", ch.UpdateCourse).Methods("PUT")
   protected.HandleFunc("/courses/{id}", ch.DeleteOneCourse).Methods("DELETE")
+  protected.HandleFunc("/courses/join", ch.JoinCourse).Methods("POST")
 
   // User routes
   protected.HandleFunc("/users/{id}", uh.GetUser).Methods("GET")
