@@ -19,7 +19,7 @@ func NewUserRepo(pool *pgxpool.Pool) *UserRepo {
 }
 
 func (db *UserRepo) GetUser(id string) (*models.User, error) {
-	rows, err := db.pool.Query(context.Background(), "SELECT id, first_name, last_name, email FROM users WHERE id = $1", id)
+	rows, err := db.pool.Query(context.Background(), "SELECT id, first_name, last_name, email, role FROM users WHERE id = $1", id)
 	if err != nil {
 		log.Println("user not found")
 		return nil, err
@@ -28,7 +28,7 @@ func (db *UserRepo) GetUser(id string) (*models.User, error) {
 
 	user := &models.User{}
 	if rows.Next() {
-		err = rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email)
+		err = rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.Role)
 		if err != nil {
 			return nil, err
 		}
