@@ -12,14 +12,14 @@ import (
 )
 
 type User_handler struct {
-	db *db.DB
+  db *db.DB
 }
 
 func NewUserHandler(db *db.DB) *User_handler {
-	h := &User_handler{
-		db: db,
-	}
-	return h
+  h := &User_handler{
+    db: db,
+  }
+  return h
 }
 
 // GetUser godoc
@@ -34,21 +34,21 @@ func NewUserHandler(db *db.DB) *User_handler {
 // @Failure 400 {string} string "Error"
 // @Router /users/{id} [get]
 func (h *User_handler) GetUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userID := vars["id"]
+  vars := mux.Vars(r)
+  userID := vars["id"]
 
-	res, err := h.db.Users.GetUser(userID)
-	if err != nil {
-		w.Write([]byte("Ошибка"))
-		return
-	}
+  res, err := h.db.Users.GetUser(userID)
+  if err != nil {
+    w.Write([]byte("Ошибка"))
+    return
+  }
 
-	json.NewEncoder(w).Encode(res)
+  json.NewEncoder(w).Encode(res)
 }
 
 type AuthBody struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+  Email    string `json:"email"`
+  Password string `json:"password"`
 }
 
 // Auth godoc
@@ -63,46 +63,48 @@ type AuthBody struct {
 // @Failure 500 {string} string "Ошибка генерации токена"
 // @Router /auth [post]
 func (h *User_handler) Auth(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
+  body, err := io.ReadAll(r.Body)
 
-	if err != nil {
-		return
-	}
+  if err != nil {
+    return
+  }
 
-	var ab AuthBody
-	err = json.Unmarshal([]byte(body), &ab)
+  var ab AuthBody
+  err = json.Unmarshal([]byte(body), &ab)
 
-	if err != nil {
-		fmt.Print(err)
-		return
-	}
+  if err != nil {
+    fmt.Print(err)
+    return
+  }
 
-	user, err := h.db.Users.Auth(ab.Email, ab.Password)
+  user, err := h.db.Users.Auth(ab.Email, ab.Password)
 
-	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("Пользователь не найден"))
-		return
-	}
+  if err != nil {
+    w.WriteHeader(http.StatusNotFound)
+    w.Write([]byte("Пользователь не найден"))
+    return
+  }
 
-	jwt := &jwt_auth.JWTAuth{}
+  jwt := &jwt_auth.JWTAuth{}
 
-	token, err := jwt.GenerateToken(user.FirstName, user.Password, user.Role)
+  fmt.Printf("User after Auth: %+v\n", user)
 
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Ошибка генерации токена"))
-		return
-	}
+  token, err := jwt.GenerateToken(user)
 
-	w.Write([]byte(token))
+  if err != nil {
+    w.WriteHeader(http.StatusInternalServerError)
+    w.Write([]byte("Ошибка генерации токена"))
+    return
+  }
+
+  w.Write([]byte(token))
 }
 
 type RegisterBody struct {
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
+  FirstName string `json:"firstName"`
+  LastName  string `json:"lastName"`
+  Email     string `json:"email"`
+  Password  string `json:"password"`
 }
 
 // AddOne godoc
@@ -117,26 +119,26 @@ type RegisterBody struct {
 // @Failure 500 {string} string "Не удалось создать пользователя"
 // @Router /users [post]
 func (h *User_handler) AddOne(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
+  body, err := io.ReadAll(r.Body)
 
-	if err != nil {
-		return
-	}
+  if err != nil {
+    return
+  }
 
-	var rb RegisterBody
-	err = json.Unmarshal([]byte(body), &rb)
+  var rb RegisterBody
+  err = json.Unmarshal([]byte(body), &rb)
 
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Неправильно составлено тело запроса"))
-	}
+  if err != nil {
+    w.WriteHeader(http.StatusBadRequest)
+    w.Write([]byte("Неправильно составлено тело запроса"))
+  }
 
-	err = h.db.Users.AddUser(rb.FirstName, rb.LastName, rb.Email, rb.Password)
+  err = h.db.Users.AddUser(rb.FirstName, rb.LastName, rb.Email, rb.Password)
 
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Не удалось создать пользователя"))
-	}
+  if err != nil {
+    w.WriteHeader(http.StatusInternalServerError)
+    w.Write([]byte("Не удалось создать пользователя"))
+  }
 }
 
 // GetUserCourses godoc
@@ -152,23 +154,22 @@ func (h *User_handler) AddOne(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {string} string "Пользователь не найден"
 // @Router /users/{id}/courses [get]
 func (h *User_handler) GetUserCourses(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userID := vars["id"]
+  vars := mux.Vars(r)
+  userID := vars["id"]
 
-	courses, err := h.db.Courses.GetUserCourses(userID)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Ошибка получения курсов"))
-		return
-	}
+  courses, err := h.db.Courses.GetUserCourses(userID)
+  if err != nil {
+    fmt.Println(err)
+    w.WriteHeader(http.StatusBadRequest)
+    w.Write([]byte("Ошибка получения курсов"))
+    return
+  }
+    if courses == nil {
+    w.WriteHeader(http.StatusNotFound)
+    w.Write([]byte("Курсы не найдены"))
+    return
+  }
 
-	if courses == nil {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("Курсы не найдены"))
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(courses)
+  w.Header().Set("Content-Type", "application/json")
+  json.NewEncoder(w).Encode(courses)
 }

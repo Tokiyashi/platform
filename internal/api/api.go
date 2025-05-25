@@ -9,99 +9,92 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type API struct {
-	db     *db.DB
-	router *mux.Router
-}
-
-// CORS middleware — разрешает все источники
-func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
+  db     *db.DB
+  router *mux.Router
 }
 
 func authMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		log.Printf("Raw Authorization header: '%s'", authHeader)
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    authHeader := r.Header.Get("Authorization")
+    log.Printf("Raw Authorization header: '%s'", authHeader)
 
-		if authHeader == "" {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("Authorization header is empty"))
-			return
-		}
+    if authHeader == "" {
+      w.WriteHeader(http.StatusUnauthorized)
+      w.Write([]byte("Authorization header is empty"))
+      return
+    }
 
-		// Ensure Bearer prefix
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			authHeader = "Bearer " + authHeader
-		}
+    // Ensure Bearer prefix
+    if !strings.HasPrefix(authHeader, "Bearer ") {
+      authHeader = "Bearer " + authHeader
+    }
 
-		jwt := &jwt_auth.JWTAuth{}
-		_, err := jwt.ValidateToken(strings.TrimPrefix(authHeader, "Bearer "))
+    jwt := &jwt_auth.JWTAuth{}
+    _, err := jwt.ValidateToken(strings.TrimPrefix(authHeader, "Bearer "))
 
-		if err != nil {
-			log.Printf("Token validation error: %v", err)
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("Ошибка авторизации: " + err.Error()))
-			return
-		}
+    if err != nil {
+      log.Printf("Token validation error: %v", err)
+      w.WriteHeader(http.StatusUnauthorized)
+      w.Write([]byte("Ошибка авторизации: " + err.Error()))
+      return
+    }
 
-		w.Header().Set("Content-Type", "application/json")
-		next.ServeHTTP(w, r)
-	})
+    w.Header().Set("Content-Type", "application/json")
+    next.ServeHTTP(w, r)
+  })
 }
 
 func (api *API) endpoints() {
-	uh := handlers.NewUserHandler(api.db)
-	ch := handlers.NewCourseHandler(api.db)
+  uh := handlers.NewUserHandler(api.db)
+  ch := handlers.NewCourseHandler(api.db)
 
-	// Apply CORS to all routes
-	api.router.Use(corsMiddleware)
 
-	// Public routes (no auth required)
-	api.router.HandleFunc("/auth", uh.Auth).Methods("POST")
-	api.router.HandleFunc("/users", uh.AddOne).Methods("POST") // registration
-	api.router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
-		httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
-	))
+  // Public routes (no auth required)
+  api.router.HandleFunc("/auth", uh.Auth).Methods("POST")
+  api.router.HandleFunc("/users", uh.AddOne).Methods("POST") // registration
+  api.router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
+    httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
+  ))
 
-	// Protected routes (auth required)
-	protected := api.router.PathPrefix("").Subrouter()
-	protected.Use(authMiddleware)
+  // Protected routes (auth required)
+  protected := api.router.PathPrefix("").Subrouter()
+  protected.Use(authMiddleware)
 
-	// Course routes
-	protected.HandleFunc("/courses", ch.GetCurrentCourses).Methods("GET")
-	protected.HandleFunc("/courses", ch.AddOneCourse).Methods("POST")
-	protected.HandleFunc("/courses/{id}", ch.UpdateCourse).Methods("PUT")
-	protected.HandleFunc("/courses/{id}", ch.DeleteOneCourse).Methods("DELETE")
+  // Course routes
+  protected.HandleFunc("/courses", ch.GetCurrentCourses).Methods("GET")
+  protected.HandleFunc("/courses", ch.AddOneCourse).Methods("POST")
+  protected.HandleFunc("/courses/{id}", ch.UpdateCourse).Methods("PUT")
+  protected.HandleFunc("/courses/{id}", ch.DeleteOneCourse).Methods("DELETE")
 
-	// User routes
-	protected.HandleFunc("/users/{id}", uh.GetUser).Methods("GET")
-	protected.HandleFunc("/users/{id}/courses", uh.GetUserCourses).Methods("GET")
+  // User routes
+  protected.HandleFunc("/users/{id}", uh.GetUser).Methods("GET")
+  protected.HandleFunc("/users/{id}/courses", uh.GetUserCourses).Methods("GET")
 }
 
 func (api *API) Start() error {
-	return http.ListenAndServe(":8080", api.router)
+  c := cors.New(cors.Options{
+    AllowedOrigins:   []string{"http://localhost:5173"},
+    AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+    AllowedHeaders:   []string{"Authorization", "Content-Type"},
+    AllowCredentials: true,
+  })
+
+  handler := c.Handler(api.router)
+
+  return http.ListenAndServe(":8080", handler)
 }
 
+
 func New(db *db.DB) *API {
-	api := &API{
-		db:     db,
-		router: mux.NewRouter(),
-	}
-	api.endpoints()
-	return api
+  api := &API{
+    db:     db,
+    router: mux.NewRouter(),
+  }
+  api.endpoints()
+  return api
 }
